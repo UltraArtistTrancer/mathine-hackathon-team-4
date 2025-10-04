@@ -20,5 +20,8 @@ export default {
   
   deleteCalendar(id: string) {
     return apiClient.delete(`/calendars/${id}`);
+  },
+  populateStudySessions(eventId: string) {
+    return apiClient.post('/populate_study_sessions', { eventId });
   }
 };

@@ -204,7 +204,7 @@
         </Button>
       </template>
     </Modal>
-
+<!-- Course Enrollment Modal -->
     <Modal
       id="courseEnrollmentModal"
       ref="courseEnrollmentModal"
@@ -239,6 +239,25 @@
         <div class="progress-bar">
           <div class="progress-fill" :style="{ width: loadingProgress + '%' }"></div>
         </div>
+      </div>
+    </Modal>
+
+    <!-- Study Session Prompt Modal -->
+    
+    <Modal
+      id="studySessionPromptModal"
+      ref="studySessionPromptModal"
+      title="New Event Added!"
+      :show-footer="false"
+    >
+      <p>Would you like to add study sessions for this?</p>
+      <div class="enrollment-actions">
+        <Button variant="primary" @click="handleAddStudySessions">
+          <i class="fa fa-book" aria-hidden="true"></i> Yes
+        </Button>
+        <Button variant="secondary" @click="handleSkipStudySessions">
+          <i class="fa fa-times" aria-hidden="true"></i> No
+        </Button>
       </div>
     </Modal>
 
@@ -352,6 +371,7 @@
           </Button>
           <Button variant="primary" modal="uploadCalModal" @click="uploadCal">Import</Button>
           <Button variant="primary" @click="() => exportCal('My_Calendar', events.map(toExportRow))">Export</Button>
+          <!--<Button variant="primary" @click="() => exportCal('My_Calendar', events.map(toExportRow))">AI Populate</Button>-->
         </div>
 
         <!-- CENTER: nav -->
@@ -740,6 +760,32 @@ const weekDays = computed(() => {
   return days;
 });
 
+// Course Enrollment Modal
+const studySessionPromptModal = ref();
+
+function handleAddStudySessions() {
+  // TODO: Implement your logic to add study sessions here
+  try {
+    if (!lastCreatedEventId.value) {
+      throw new Error("No event ID found for study session population.");
+    }
+    await calendarService.populateStudySessions(lastCreatedEventId.value);
+    // Optionally refresh events or show a success message
+    await fetchEvents();
+  } catch (e) {
+    console.error(e);
+    // Optionally show an error message to the user
+  } finally {
+    studySessionPromptModal.value?.close();
+  }
+  studySessionPromptModal.value?.close();
+}
+
+function handleSkipStudySessions() {
+  studySessionPromptModal.value?.close();
+}
+
+
 // Form state
 const formMode = ref<"Add" | "Edit" | "Saving">("Add");
 const setFormMode = (mode: "Add" | "Edit" | "Saving") => {
@@ -1048,6 +1094,17 @@ async function confirmOne(ev: Partial<ICalendar>, i?: number) {
   try {
     const res = await calendarService.createCalendar(ev as ICalendar);
     updateLocalEvents(res.data, true);
+    if (isEditing.value && currentEvent.value) {
+  const res = await calendarService.updateCalendar(currentEvent.value.calendarid, eventData);
+  updateLocalEvents(res.data);
+} else {
+  const res = await calendarService.createCalendar(eventData as ICalendar);
+  updateLocalEvents(res.data, true);
+  // Show the study session prompt modal after adding a new event
+  nextTick(() => {
+    studySessionPromptModal.value?.open();
+  });
+}
     if (typeof i === 'number') stagedEvents.value.splice(i, 1);
   } finally {
     loading.value = false;
@@ -1309,6 +1366,8 @@ function coerceRecurrenceUntilFromEndDate(form: EventForm) {
   }
 }
 
+const lastCreatedEventId = ref<string | null>(null);
+
 // Handle form submission
 async function handleSaveEvent() {
   if (loading.value) return;
@@ -1370,6 +1429,20 @@ async function handleSaveEvent() {
     } else {
       const res = await calendarService.createCalendar(eventData as ICalendar);
       updateLocalEvents(res.data, true);
+      nextTick(() => {
+        studySessionPromptModal.value?.open();
+      });
+    }
+    if (isEditing.value && currentEvent.value) {
+      const res = await calendarService.updateCalendar(currentEvent.value.calendarid, eventData);
+      updateLocalEvents(res.data);
+    } else {
+      const res = await calendarService.createCalendar(eventData as ICalendar);
+      updateLocalEvents(res.data, true);
+      lastCreatedEventId.value = res.data.calendarid; // <-- Store the new event's ID
+      nextTick(() => {
+        studySessionPromptModal.value?.open();
+      });
     }
 
     closeEventFormModal();

@@ -112,4 +112,20 @@ export class CalendarController {
       next(error);
     }
   }
+
+  static async populateStudySessions(req: Request, res: Response, next: NextFunction) {
+    try {
+      await this.validateNetlink(process.env.netID);
+
+          const { eventId } = req.body; // <-- Extract eventId from request body
+
+
+      // Call your service method (you'll need to implement this in CalendarService)
+      const result = await CalendarService.populateStudySessions(process.env.netID as string, eventId);
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
