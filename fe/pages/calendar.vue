@@ -205,7 +205,26 @@
       </template>
     </Modal>
 
-
+    <Modal
+      id="courseEnrollmentModal"
+      ref="courseEnrollmentModal"
+      title="New Courses Detected!"
+      :show-footer="false"
+    >
+      <p>Your account has been enrolled in new courses. Would you like to automatically add the lecture timings to your calendar?</p>
+      
+      <div class="enrollment-actions">
+        <Button variant="primary" @click="handleEnrollmentYes">
+          <i class="fa fa-check" aria-hidden="true"></i> Yes
+        </Button>
+        <Button variant="secondary" @click="handleEnrollmentLater">
+          <i class="fa fa-clock-o" aria-hidden="true"></i> Ask Me Again Later
+        </Button>
+        <Button variant="secondary" @click="handleEnrollmentNo">
+          <i class="fa fa-times" aria-hidden="true"></i> No
+        </Button>
+      </div>
+    </Modal>
 
     <!-- Delete Confirmation Modal -->
     <Modal
@@ -1794,6 +1813,16 @@ function goToToday() {
 onMounted(() => {
   fetchEvents();
   fetchTasks();
+  
+  // Show course enrollment popup once per session
+  if (isLoggedIn) {
+    const hasSeenPrompt = sessionStorage.getItem('courseEnrollmentPromptShown');
+    if (!hasSeenPrompt) {
+      nextTick(() => {
+        courseEnrollmentModal.value?.open();
+      });
+    }
+  }
 });
 
 // ICS Export Utils
@@ -1970,6 +1999,26 @@ watch(showTasks, () => {
   // Force recomputation of calendar days
   currentDate.value = new Date(currentDate.value);
 });
+
+const courseEnrollmentModal = ref();
+
+function handleEnrollmentYes() {
+  // Future: Call API to auto-populate calendar with lecture timings
+  sessionStorage.setItem('courseEnrollmentPromptShown', 'true');
+  courseEnrollmentModal.value?.close();
+}
+
+function handleEnrollmentLater() {
+  // Future: Set reminder logic
+  sessionStorage.setItem('courseEnrollmentPromptShown', 'true');
+  courseEnrollmentModal.value?.close();
+}
+
+function handleEnrollmentNo() {
+  // Future: Mark as permanently dismissed
+  sessionStorage.setItem('courseEnrollmentPromptShown', 'true');
+  courseEnrollmentModal.value?.close();
+}
 </script>
 
 <style scoped>
@@ -2484,6 +2533,18 @@ Button[variant="outline-secondary"]:hover {
   box-shadow: none;
 }
 
+.enrollment-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.enrollment-actions Button {
+  flex: 1;
+  min-width: 120px;
+}
+
 /* --- Responsive: stack into two rows on small screens --- */
 @media (max-width: 900px) {
   .cal-toolbar {
@@ -2500,6 +2561,9 @@ Button[variant="outline-secondary"]:hover {
   .cal-actions { gap: 6px; }
   .cal-toggles { gap: 6px; }
   .cal-title   { font-size: 1rem; }
+  .enrollment-actions {
+    flex-direction: column;
+  }
 }
 
 /* --- Optional: make primary/secondary look like a set --- */
