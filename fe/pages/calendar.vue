@@ -392,56 +392,44 @@
 
                   <!-- Events Display -->
                   <template v-if="!showTasks">
-                    <!-- Collapsed view: limit events shown -->
+                    <!-- Collapsed view: show all events titles only -->
                     <template v-if="viewMode === 'collapsed'">
-                      <template v-for="(event, index) in getVisibleEventsForDay(day.events, 3).visible" :key="event.uid + '-' + (event.recurrenceId || event.start.toISOString())">
-                        <div
-                          class="calendar-event"
-                          :style="{ borderLeft: '4px solid ' + getEventColor(event.master || event) }"
-                        >
-                          <div class="event-header">
-                            <div class="event-content">
-                              <strong>{{ event.title || "Event" }}</strong>
-                              <div class="event-time">
-                                {{ formatTime(event.start) }} - {{ formatTime(event.end!) }}
-                              </div>
-                            </div>
-                            <div class="event-menu">
-                              <Button
-                                class="btn btn-compact menu-toggle"
-                                @click.stop="toggleEventMenu(event.uid + '-' + (event.recurrenceId || event.start.toISOString()))"
+                      <div
+                        v-for="event in day.events"
+                        :key="event.uid + '-' + (event.recurrenceId || event.start.toISOString())"
+                        class="calendar-event"
+                        :style="{ borderLeft: '4px solid ' + getEventColor(event.master || event) }"
+                      >
+                        <div class="event-header">
+                          <div class="event-content">
+                            <strong>{{ event.title || "Event" }}</strong>
+                          </div>
+                          <div class="event-menu">
+                            <Button
+                              class="btn btn-compact menu-toggle"
+                              @click.stop="toggleEventMenu(event.uid + '-' + (event.recurrenceId || event.start.toISOString()))"
+                            >
+                              ⋮
+                            </Button>
+                            <div
+                              class="menu-dropdown"
+                              :class="{ 'show': activeMenu === (event.uid + '-' + (event.recurrenceId || event.start.toISOString())) }"
+                            >
+                              <button
+                                class="menu-item"
+                                @click.stop="handleEditEvent(event.master || event)"
                               >
-                                ⋮
-                              </Button>
-                              <div
-                                class="menu-dropdown"
-                                :class="{ 'show': activeMenu === (event.uid + '-' + (event.recurrenceId || event.start.toISOString())) }"
+                                <span class="menu-icon">✏</span> Edit
+                              </button>
+                              <button
+                                class="menu-item menu-item-danger"
+                                @click.stop="handleDeleteClick(event.master || event)"
                               >
-                                <button
-                                  class="menu-item"
-                                  @click.stop="handleEditEvent(event.master || event)"
-                                >
-                                  <span class="menu-icon">✏</span> Edit
-                                </button>
-                                <button
-                                  class="menu-item menu-item-danger"
-                                  @click.stop="handleDeleteClick(event.master || event)"
-                                >
-                                  <span class="menu-icon">🗑</span> Delete
-                                </button>
-                              </div>
+                                <span class="menu-icon">🗑</span> Delete
+                              </button>
                             </div>
                           </div>
                         </div>
-                      </template>
-                      
-                      <!-- Show "+X more" indicator if there are hidden events -->
-                      <div 
-                        v-if="getVisibleEventsForDay(day.events, 3).hidden > 0" 
-                        class="more-events"
-                        @click="toggleViewMode('expanded')"
-                      >
-                        +{{ getVisibleEventsForDay(day.events, 3).hidden }} more
                       </div>
                     </template>
 
@@ -2330,7 +2318,7 @@ Button[variant="outline-secondary"]:hover {
 }
 
 .calendar-day.today {
-  background-color: #e6f7ff;
+  background-color: #005a9c;
 }
 
 .day-number {
@@ -2871,12 +2859,11 @@ Button[variant="outline-secondary"]:hover {
   font-size: 14px;
 }
 
-/* Collapsed mode: fixed height cells */
-/* Collapsed mode: fixed height cells with proper spacing */
+/* Collapsed mode: dynamic height based on content */
 .calendar-day.collapsed-mode {
   min-height: 100px !important;
-  max-height: 100px !important;
-  overflow: hidden;
+  max-height: none !important;
+  overflow: visible !important;
   padding: 4px !important;
 }
 
