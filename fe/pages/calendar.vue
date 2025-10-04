@@ -356,15 +356,13 @@
 
         <!-- CENTER: nav -->
         <div class="calendar-nav">
-          <Button variant="secondary" @click="prevPeriod">
-            <i class="fa fa-chevron-left text-primary" aria-hidden="true"></i>
+          <Button variant="secondary" @click="prevPeriod" class="nav-arrow nav-arrow-left">
           </Button>
           <h3 class="cal-title">
             <template v-if="currentView === 'month'">{{ currentMonthName }} {{ currentYear }}</template>
             <template v-else>{{ weekRangeText }}</template>
           </h3>
-          <Button variant="secondary" @click="nextPeriod">
-            <i class="fa fa-chevron-right text-primary" aria-hidden="true"></i>
+          <Button variant="secondary" @click="nextPeriod" class="nav-arrow nav-arrow-right">
           </Button>
         </div>
 
@@ -2567,7 +2565,58 @@ Button[variant="outline-secondary"]:hover {
 .cal-toggles .btn-group + .btn-group { margin-left: 6px; }
 
 /* Ensure secondary nav arrows match height */
-.calendar-nav Button { height: 36px; display: inline-flex; align-items: center; }
+.calendar-nav .nav-arrow {
+  min-width: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #f8fafc !important;
+  border: 1px solid #d9e2ec !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+  position: relative !important;
+}
+
+.calendar-nav .nav-arrow::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.calendar-nav .nav-arrow-left::before {
+  border-width: 8px 12px 8px 0;
+  border-color: transparent #005493 transparent transparent;
+  margin-right: 2px;
+}
+
+.calendar-nav .nav-arrow-right::before {
+  border-width: 8px 0 8px 12px;
+  border-color: transparent transparent transparent #005493;
+  margin-left: 2px;
+}
+
+.calendar-nav .nav-arrow:hover {
+  background: #e6f2ff !important;
+  border-color: #005493 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 84, 147, 0.15) !important;
+}
+
+.calendar-nav .nav-arrow:hover::before {
+  border-color: transparent #003d6b transparent transparent;
+}
+
+.calendar-nav .nav-arrow-right:hover::before {
+  border-color: transparent transparent transparent #003d6b;
+}
+
+.calendar-nav .nav-arrow:active {
+  transform: translateY(1px) !important;
+  box-shadow: 0 1px 2px rgba(0, 84, 147, 0.1) !important;
+}
 
 /* Keep the toolbar feeling like one piece with the calendar surface */
 .calendar-controls {
