@@ -413,28 +413,38 @@
                       class="calendar-event"
                       :style="{ borderLeft: '4px solid ' + getEventColor(event.master || event) }" 
                     >
-                      <strong>{{ event.title || "Event" }}</strong>
-                      <div class="event-time">
-                        {{ formatTime(event.start) }} - {{ formatTime(event.end!) }}   
-                      </div>
-                      <div class="event-actions mt-1">
-                        <Button
-                          class="btn btn-primary badge me-2"
-                          modal="eventForm"
-                          @click.stop="prepareEditEvent(event.master || event)"  
-                        >
-                          <i class="fa fa-pencil" aria-hidden="true"></i>
-                          <span class="sr-only">Edit Event</span>
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          class="btn btn-primary badge"
-                          modal="deleteConfirmModal"
-                          @click.stop="setEventToDelete(event.master || event)"  
-                        >
-                          <i class="fa fa-trash text-primary" aria-hidden="true"></i>
-                          <span class="sr-only">Delete event</span>
-                        </Button>
+                      <div class="event-header">
+                        <div class="event-content">
+                          <strong>{{ event.title || "Event" }}</strong>
+                          <div class="event-time">
+                            {{ formatTime(event.start) }} - {{ formatTime(event.end!) }}   
+                          </div>
+                        </div>
+                        <div class="event-menu">
+                          <Button
+                            class="btn btn-compact menu-toggle"
+                            @click.stop="toggleEventMenu(event.uid + '-' + (event.recurrenceId || event.start.toISOString()))"
+                          >
+                            ⋮
+                          </Button>
+                          <div 
+                            class="menu-dropdown"
+                            :class="{ 'show': activeMenu === (event.uid + '-' + (event.recurrenceId || event.start.toISOString())) }"
+                          >
+                            <button 
+                              class="menu-item"
+                              @click.stop="handleEditEvent(event.master || event)"
+                            >
+                              <span class="menu-icon">✏</span> Edit
+                            </button>
+                            <button 
+                              class="menu-item menu-item-danger"
+                              @click.stop="handleDeleteClick(event.master || event)"
+                            >
+                              <span class="menu-icon">🗑</span> Delete
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </template>
@@ -1181,6 +1191,31 @@ function buildRRuleFromForm(form: EventForm): string | undefined {
   return parts.join(';');
 }
 
+// 3 dot menu to expand edit and delete event buttons
+const activeMenu = ref<string | null>(null);
+
+function toggleEventMenu(eventId: string) {
+  activeMenu.value = activeMenu.value === eventId ? null : eventId;
+}
+
+function handleEditEvent(event: ICalendar) {
+  activeMenu.value = null;
+  prepareEditEvent(event);
+}
+
+function handleDeleteClick(event: ICalendar) {
+  activeMenu.value = null;
+  setEventToDelete(event);
+}
+
+// Close menu when clicking outside
+onMounted(() => {
+  // ... existing onMounted code ...
+  
+  document.addEventListener('click', () => {
+    activeMenu.value = null;
+  });
+});
 
 // Edit event
 function prepareEditEvent(event: ICalendar) {
@@ -2695,6 +2730,136 @@ Button[variant="outline-secondary"]:hover {
 #loadingModal :deep(.modal-backdrop) {
   pointer-events: all;
   cursor: not-allowed;
+}
+
+/* Event card with menu */
+.calendar-event {
+  background-color: #e3f2fd;
+  padding: 6px 8px;
+  margin: 4px 0;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  position: relative;
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.event-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.event-content strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Show max 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3;
+  word-break: break-word; /* Break long words if needed */
+}
+
+.event-time {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+/* Remove old event-actions styles */
+.event-actions {
+  display: none;
+}
+
+/* Event menu styles */
+.event-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.menu-toggle {
+  padding: 0px 6px !important;
+  font-size: 16px !important;
+  line-height: 1.2 !important;
+  font-weight: bold !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 3px !important;
+  color: #5b6b79 !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-toggle:hover {
+  background: white !important;
+  border-color: #005493 !important;
+  color: #005493 !important;
+}
+
+.menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: white;
+  border: 1px solid #d9e2ec;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 140px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s ease;
+}
+
+.menu-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 14px;
+  color: #0b1720;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.menu-item:first-child {
+  border-radius: 6px 6px 0 0;
+}
+
+.menu-item:last-child {
+  border-radius: 0 0 6px 6px;
+}
+
+.menu-item:hover {
+  background: #f8fafc;
+}
+
+.menu-item-danger:hover {
+  background: #fee;
+  color: #c00;
+}
+
+.menu-icon {
+  font-size: 14px;
 }
 
 /* --- Responsive: stack into two rows on small screens --- */
