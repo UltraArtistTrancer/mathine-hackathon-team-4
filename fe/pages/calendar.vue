@@ -368,7 +368,7 @@
 
         <!-- RIGHT: toggles -->
         <div class="cal-toggles">
-          <div class="btn-group">
+          <!-- <div class="btn-group">
             <Button variant="secondary" :class="{ 'active-toggle': !showTasks }" @click="showTasks = false">Events</Button>
             <Button variant="secondary" :class="{ 'active-toggle': showTasks }" @click="showTasks = true">Tasks</Button>
           </div>
@@ -376,6 +376,24 @@
           <div class="btn-group">
             <Button variant="secondary" :class="{ 'active-toggle': currentView === 'month' }" @click="currentView = 'month'">Month</Button>
             <Button variant="secondary" :class="{ 'active-toggle': currentView === 'week' }" @click="currentView = 'week'">Week</Button>
+          </div> -->
+
+          <!-- toggle collapsed expanded view -->
+          <div class="btn-group view-mode-toggle">
+            <Button 
+              variant="secondary" 
+              :class="{ 'active-toggle': viewMode === 'collapsed' }" 
+              @click="toggleViewMode('collapsed')"
+            >
+              Collapsed
+            </Button>
+            <Button 
+              variant="secondary" 
+              :class="{ 'active-toggle': viewMode === 'expanded' }" 
+              @click="toggleViewMode('expanded')"
+            >
+              Expanded
+            </Button>
           </div>
 
           <Button variant="outline-secondary" @click="goToToday">Today</Button>
@@ -401,52 +419,109 @@
                   :class="{
                     'current-month': day.isCurrentMonth,
                     today: isToday(day.date),
+                    'collapsed-mode': viewMode === 'collapsed'
                   }"
                 >
                   <div class="day-number">{{ day.date.getDate() }}</div>
 
                   <!-- Events Display -->
                   <template v-if="!showTasks">
-                    <div
-                      v-for="event in day.events"
-                      :key="event.uid + '-' + (event.recurrenceId || event.start.toISOString())" 
-                      class="calendar-event"
-                      :style="{ borderLeft: '4px solid ' + getEventColor(event.master || event) }" 
-                    >
-                      <div class="event-header">
-                        <div class="event-content">
-                          <strong>{{ event.title || "Event" }}</strong>
-                          <div class="event-time">
-                            {{ formatTime(event.start) }} - {{ formatTime(event.end!) }}   
+                    <!-- Collapsed view: limit events shown -->
+                    <template v-if="viewMode === 'collapsed'">
+                      <template v-for="(event, index) in getVisibleEventsForDay(day.events, 3).visible" :key="event.uid + '-' + (event.recurrenceId || event.start.toISOString())">
+                        <div
+                          class="calendar-event"
+                          :style="{ borderLeft: '4px solid ' + getEventColor(event.master || event) }"
+                        >
+                          <div class="event-header">
+                            <div class="event-content">
+                              <strong>{{ event.title || "Event" }}</strong>
+                              <div class="event-time">
+                                {{ formatTime(event.start) }} - {{ formatTime(event.end!) }}
+                              </div>
+                            </div>
+                            <div class="event-menu">
+                              <Button
+                                class="btn btn-compact menu-toggle"
+                                @click.stop="toggleEventMenu(event.uid + '-' + (event.recurrenceId || event.start.toISOString()))"
+                              >
+                                ⋮
+                              </Button>
+                              <div
+                                class="menu-dropdown"
+                                :class="{ 'show': activeMenu === (event.uid + '-' + (event.recurrenceId || event.start.toISOString())) }"
+                              >
+                                <button
+                                  class="menu-item"
+                                  @click.stop="handleEditEvent(event.master || event)"
+                                >
+                                  <span class="menu-icon">✏</span> Edit
+                                </button>
+                                <button
+                                  class="menu-item menu-item-danger"
+                                  @click.stop="handleDeleteClick(event.master || event)"
+                                >
+                                  <span class="menu-icon">🗑</span> Delete
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <div class="event-menu">
-                          <Button
-                            class="btn btn-compact menu-toggle"
-                            @click.stop="toggleEventMenu(event.uid + '-' + (event.recurrenceId || event.start.toISOString()))"
-                          >
-                            ⋮
-                          </Button>
-                          <div 
-                            class="menu-dropdown"
-                            :class="{ 'show': activeMenu === (event.uid + '-' + (event.recurrenceId || event.start.toISOString())) }"
-                          >
-                            <button 
-                              class="menu-item"
-                              @click.stop="handleEditEvent(event.master || event)"
+                      </template>
+                      
+                      <!-- Show "+X more" indicator if there are hidden events -->
+                      <div 
+                        v-if="getVisibleEventsForDay(day.events, 3).hidden > 0" 
+                        class="more-events"
+                        @click="toggleViewMode('expanded')"
+                      >
+                        +{{ getVisibleEventsForDay(day.events, 3).hidden }} more
+                      </div>
+                    </template>
+
+                    <!-- Expanded view: show all events -->
+                    <template v-else>
+                      <div
+                        v-for="event in day.events"
+                        :key="event.uid + '-' + (event.recurrenceId || event.start.toISOString())"
+                        class="calendar-event"
+                        :style="{ borderLeft: '4px solid ' + getEventColor(event.master || event) }"
+                      >
+                        <div class="event-header">
+                          <div class="event-content">
+                            <strong>{{ event.title || "Event" }}</strong>
+                            <div class="event-time">
+                              {{ formatTime(event.start) }} - {{ formatTime(event.end!) }}
+                            </div>
+                          </div>
+                          <div class="event-menu">
+                            <Button
+                              class="btn btn-compact menu-toggle"
+                              @click.stop="toggleEventMenu(event.uid + '-' + (event.recurrenceId || event.start.toISOString()))"
                             >
-                              <span class="menu-icon">✏</span> Edit
-                            </button>
-                            <button 
-                              class="menu-item menu-item-danger"
-                              @click.stop="handleDeleteClick(event.master || event)"
+                              ⋮
+                            </Button>
+                            <div
+                              class="menu-dropdown"
+                              :class="{ 'show': activeMenu === (event.uid + '-' + (event.recurrenceId || event.start.toISOString())) }"
                             >
-                              <span class="menu-icon">🗑</span> Delete
-                            </button>
+                              <button
+                                class="menu-item"
+                                @click.stop="handleEditEvent(event.master || event)"
+                              >
+                                <span class="menu-icon">✏</span> Edit
+                              </button>
+                              <button
+                                class="menu-item menu-item-danger"
+                                @click.stop="handleDeleteClick(event.master || event)"
+                              >
+                                <span class="menu-icon">🗑</span> Delete
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </template>
                   </template>
 
                   <!-- Tasks Display -->
@@ -661,6 +736,7 @@ const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const currentDate = ref(new Date());
 const events = ref<ICalendar[]>([]);
 const currentView = ref<"month" | "week">("month");
+const viewMode = ref<"expanded" | "collapsed">("collapsed");
 
 // Generate time slots for week view
 const timeSlots = computed(() => {
@@ -1855,6 +1931,17 @@ function nextPeriod() {
   }
 }
 
+// toggle expanded vs collapsed view
+function getVisibleEventsForDay(events: Occurrence[], maxVisible: number = 3) {
+  const visible = events.slice(0, maxVisible);
+  const hidden = events.length - maxVisible;
+  return { visible, hidden: hidden > 0 ? hidden : 0 };
+}
+
+function toggleViewMode(mode: "expanded" | "collapsed") {
+  viewMode.value = mode;
+}
+
 function goToToday() {
   currentDate.value = new Date();
 }
@@ -2754,13 +2841,12 @@ Button[variant="outline-secondary"]:hover {
   min-width: 0;
 }
 
+/* Default (expanded): allow full title with wrapping */
 .event-content strong {
-  display: -webkit-box;
-  -webkit-line-clamp: 2; /* Show max 2 lines */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  display: block;
   line-height: 1.3;
-  word-break: break-word; /* Break long words if needed */
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .event-time {
@@ -2860,6 +2946,138 @@ Button[variant="outline-secondary"]:hover {
 
 .menu-icon {
   font-size: 14px;
+}
+
+/* Collapsed mode: fixed height cells */
+/* Collapsed mode: fixed height cells with proper spacing */
+.calendar-day.collapsed-mode {
+  min-height: 100px !important;
+  max-height: 100px !important;
+  overflow: hidden;
+  padding: 4px !important;
+}
+
+/* Ensure grid doesn't overflow viewport in collapsed mode */
+.collapsed-mode .calendar-grid {
+  height: auto;
+}
+
+/* Compact event cards in collapsed mode */
+.calendar-day.collapsed-mode .calendar-event {
+  padding: 3px 6px !important;
+  margin: 2px 0 !important;
+  min-height: auto !important;
+}
+
+.calendar-day.collapsed-mode .event-header {
+  gap: 4px !important;
+}
+
+.calendar-day.collapsed-mode .event-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.calendar-day.collapsed-mode .event-content strong {
+  display: block !important;
+  -webkit-line-clamp: 1 !important; /* Only 1 line for title */
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  line-height: 1.2 !important;
+  font-size: 0.75rem !important;
+  margin: 0 !important;
+}
+
+.calendar-day.collapsed-mode .event-time {
+  font-size: 0.65rem !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-day.collapsed-mode .menu-toggle {
+  min-width: 16px !important;
+  height: 16px !important;
+  font-size: 12px !important;
+  padding: 0 4px !important;
+}
+
+.calendar-day.collapsed-mode .day-number {
+  font-size: 0.8rem !important;
+  margin-bottom: 2px !important;
+}
+
+.calendar-day.collapsed-mode .more-events {
+  padding: 2px 4px !important;
+  margin: 2px 0 !important;
+  font-size: 0.7rem !important;
+}
+
+/* Expanded mode keeps original sizing */
+.calendar-day:not(.collapsed-mode) {
+  min-height: 120px;
+  max-height: none;
+}
+
+/* +X more indicator */
+.more-events {
+  padding: 4px 8px;
+  margin: 4px 0;
+  font-size: 0.8rem;
+  color: #005493;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  border-radius: 3px;
+  transition: background 0.15s ease;
+}
+
+.more-events:hover {
+  background: #e6f2ff;
+}
+
+/* Calendar grid - let it size naturally */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background-color: #e9ecef;
+  border: 1px solid #e9ecef;
+}
+
+/* Day header row */
+.day-header {
+  grid-row: 1;
+}
+
+/* Ensure all day cells have equal height */
+.calendar-day {
+  display: flex;
+  flex-direction: column;
+}
+
+/* View mode toggle styling - inverted colors for selected */
+.view-mode-toggle .btn {
+  transition: all 0.2s ease;
+}
+
+.view-mode-toggle Button[variant="secondary"] {
+  background: white;
+  color: #005493;
+  border-color: #005493;
+}
+
+.view-mode-toggle Button[variant="secondary"].active-toggle {
+  background: #005493;
+  color: white;
+  border-color: #005493;
+}
+
+.view-mode-toggle Button[variant="secondary"]:hover:not(.active-toggle) {
+  background: #e6f2ff;
 }
 
 /* --- Responsive: stack into two rows on small screens --- */
