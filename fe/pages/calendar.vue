@@ -226,6 +226,22 @@
       </div>
     </Modal>
 
+    <Modal
+      id="loadingModal"
+      ref="loadingModal"
+      title="Adding Lectures to Calendar"
+      :show-footer="false"
+      :closable="false"
+    >
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <p class="loading-text">Please wait while we import your lecture schedule...</p>
+        <div class="progress-bar">
+          <div class="progress-fill" :style="{ width: loadingProgress + '%' }"></div>
+        </div>
+      </div>
+    </Modal>
+
     <!-- Delete Confirmation Modal -->
     <Modal
       id="deleteConfirmModal"
@@ -2001,11 +2017,39 @@ watch(showTasks, () => {
 });
 
 const courseEnrollmentModal = ref();
+const loadingModal = ref();
+const loadingProgress = ref(0);
 
-function handleEnrollmentYes() {
-  // Future: Call API to auto-populate calendar with lecture timings
-  sessionStorage.setItem('courseEnrollmentPromptShown', 'true');
+async function handleEnrollmentYes() {
+  // Close enrollment modal and open loading modal
   courseEnrollmentModal.value?.close();
+  loadingModal.value?.open();
+  
+  // Reset progress
+  loadingProgress.value = 0;
+  
+  // Simulate progress over 10 seconds
+  const interval = setInterval(() => {
+    loadingProgress.value += 1;
+    if (loadingProgress.value >= 100) {
+      clearInterval(interval);
+    }
+  }, 100); // Update every 100ms for smooth animation
+  
+  try {
+    // Your actual import logic here
+    // await importLectures();
+    
+    // Wait for 10 seconds
+    await new Promise(resolve => setTimeout(resolve, 10000));
+    
+    sessionStorage.setItem('courseEnrollmentPromptShown', 'true');
+  } catch (error) {
+    console.error('Failed to import lectures:', error);
+  } finally {
+    clearInterval(interval);
+    loadingModal.value?.close();
+  }
 }
 
 function handleEnrollmentLater() {
@@ -2543,6 +2587,65 @@ Button[variant="outline-secondary"]:hover {
 .enrollment-actions Button {
   flex: 1;
   min-width: 120px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  gap: 20px;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid #e9ecef;
+  border-top: 4px solid #005493;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #334e68;
+  text-align: center;
+  margin: 0;
+}
+
+.progress-bar {
+  width: 100%;
+  max-width: 300px;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #005493, #0077cc);
+  border-radius: 4px;
+  transition: width 0.1s ease;
+}
+
+/* Prevent modal backdrop from being dismissed */
+:deep(.modal-backdrop) {
+  pointer-events: all !important;
+}
+
+#loadingModal :deep(.modal) {
+  pointer-events: auto;
+}
+
+#loadingModal :deep(.modal-backdrop) {
+  pointer-events: all;
+  cursor: not-allowed;
 }
 
 /* --- Responsive: stack into two rows on small screens --- */
