@@ -13,4 +13,6 @@ RUN_MIGRATIONS=false #don't set this to true
 EXPRESS_PORT=3002
 EXPRESS_HOSTNAME=127.0.0.1
 
+OPENAI_API_KEY=secret-key-here
+
 netID=TEAM1
