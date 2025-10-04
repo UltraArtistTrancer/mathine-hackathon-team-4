@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test PDF Upload</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 600px; }
+        .result { margin-top: 20px; padding: 20px; background: #f5f5f5; border-radius: 5px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        input[type="file"] { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test PDF Analysis</h1>
+        <p>Upload a PDF from the StudyScheduler mock data to test OpenAI integration:</p>
+        
+        <form id="pdfForm" enctype="multipart/form-data">
+            <input type="file" id="pdfFile" name="pdf" accept=".pdf" required>
+            <br><br>
+            <button type="submit">Analyze PDF</button>
+        </form>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.getElementById('pdfForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('pdfFile');
+            const resultDiv = document.getElementById('result');
+            
+            if (!fileInput.files[0]) {
+                alert('Please select a PDF file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('pdf', fileInput.files[0]);
+            
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<p>Analyzing PDF... This may take a moment while OpenAI processes the document.</p>';
+            
+            try {
+                const response = await fetch('http://localhost:3002/pdf/analyze-schedule', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <h3>✅ Analysis Complete!</h3>
+                        <p><strong>File:</strong> ${result.filename}</p>
+                        <p><strong>Pages:</strong> ${result.pages}</p>
+                        <p><strong>User:</strong> ${result.netID}</p>
+                        
+                        <h4>AI Analysis:</h4>
+                        <pre style="background: white; padding: 10px; border-radius: 3px; overflow-x: auto;">${JSON.stringify(result.analysis, null, 2)}</pre>
+                        
+                        <h4>Text Preview:</h4>
+                        <p style="background: white; padding: 10px; border-radius: 3px; max-height: 200px; overflow-y: auto;">${result.extractedText}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<h3>❌ Error:</h3><p>${JSON.stringify(result, null, 2)}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<h3>❌ Network Error:</h3><p>${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

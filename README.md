@@ -8,7 +8,8 @@
 3. In terminal 2:
 `cd api`,
 `npm install`,
-`npm install --save-dev ts-node typescript`,
+`npm install pdf-parse multer openai`,
+`npm install --save-dev ts-node typescript @types/multer`,
 `npx ts-node src/index.ts`
 
 
