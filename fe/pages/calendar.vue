@@ -2990,12 +2990,7 @@ Button[variant="outline-secondary"]:hover {
 }
 
 .calendar-day.collapsed-mode .event-time {
-  font-size: 0.65rem !important;
-  line-height: 1 !important;
-  margin: 0 !important;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: none !important;
 }
 
 .calendar-day.collapsed-mode .menu-toggle {
