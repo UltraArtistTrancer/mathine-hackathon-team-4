@@ -205,42 +205,7 @@
       </template>
     </Modal>
 
-    <Modal
-      id="courseEnrollmentModal"
-      ref="courseEnrollmentModal"
-      title="New Courses Detected!"
-      :show-footer="false"
-    >
-      <p>Your account has been enrolled in new courses. Would you like to automatically add the lecture timings to your calendar?</p>
-      
-      <div class="enrollment-actions">
-        <Button variant="primary" @click="handleEnrollmentYes">
-          <i class="fa fa-check" aria-hidden="true"></i> Yes
-        </Button>
-        <Button variant="secondary" @click="handleEnrollmentLater">
-          <i class="fa fa-clock-o" aria-hidden="true"></i> Ask Me Again Later
-        </Button>
-        <Button variant="secondary" @click="handleEnrollmentNo">
-          <i class="fa fa-times" aria-hidden="true"></i> No
-        </Button>
-      </div>
-    </Modal>
 
-    <Modal
-      id="loadingModal"
-      ref="loadingModal"
-      title="Adding Lectures to Calendar"
-      :show-footer="false"
-      :closable="false"
-    >
-      <div class="loading-container">
-        <div class="spinner"></div>
-        <p class="loading-text">Please wait while we import your lecture schedule...</p>
-        <div class="progress-bar">
-          <div class="progress-fill" :style="{ width: loadingProgress + '%' }"></div>
-        </div>
-      </div>
-    </Modal>
 
     <!-- Delete Confirmation Modal -->
     <Modal
@@ -342,6 +307,7 @@
         <div v-else class="hint">Choose an .ics file to preview events.</div>
       </template>
     </Modal>
+
 
     <div class="calendar-controls">
       <div class="cal-toolbar">
@@ -554,7 +520,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import type { ICalendar } from "~/types/calendar";
 import calendarService from "~/api/calendarService";
 import { Modal } from "#components";
@@ -562,6 +528,8 @@ import type { ITask } from "~/types/task";
 import taskService from "~/api/taskService";
 import ICAL from 'ical.js'
 import TimeSpinner from "~/components/TimeSpinner.vue";
+import scheduleService from "~/api/scheduleService";
+
 //import { sleep } from "../utils/sleep";
 
 const WEEKDAYS = ['SU','MO','TU','WE','TH','FR','SA'] as const;
@@ -1830,15 +1798,81 @@ onMounted(() => {
   fetchEvents();
   fetchTasks();
   
-  // Show course enrollment popup once per session
-  if (isLoggedIn) {
-    const hasSeenPrompt = sessionStorage.getItem('courseEnrollmentPromptShown');
-    if (!hasSeenPrompt) {
-      nextTick(() => {
-        courseEnrollmentModal.value?.open();
-      });
+  // Add global function for testing schedule import
+  (window as any).testScheduleImport = async () => {
+    console.log('🧪 Testing schedule import...');
+    try {
+      const response = await fetch('/nov_2025_schedule.html');
+      const htmlContent = await response.text();
+      console.log('📄 HTML loaded, length:', htmlContent.length);
+      
+      await scheduleService.autoPopulateCalendarFromSchedule(htmlContent);
+      await fetchEvents(); // Refresh calendar
+      console.log('✅ Test completed!');
+    } catch (error) {
+      console.error('❌ Test failed:', error);
     }
-  }
+  };
+
+  // Add global function for clearing calendar (testing purposes)
+  (window as any).clearCalendar = async () => {
+    console.log('🧪 Testing calendar clear...');
+    try {
+      await scheduleService.clearAllCalendarEvents();
+      await fetchEvents(); // Refresh calendar
+      console.log('✅ Calendar cleared successfully!');
+    } catch (error) {
+      console.error('❌ Clear failed:', error);
+    }
+  };
+
+  // Add global function for testing StudyScheduler PDF parsing
+  (window as any).parseAssignments = async () => {
+    console.log('🧪 Testing StudyScheduler PDF parsing...');
+    try {
+      await scheduleService.parseStudySchedulerPDFs();
+      await fetchEvents(); // Refresh calendar
+      console.log('✅ Assignment parsing completed!');
+    } catch (error) {
+      console.error('❌ Assignment parsing failed:', error);
+    }
+  };
+
+  // Add global function for clearing only assignments/exams
+  (window as any).clearAssignments = async () => {
+    console.log('🧪 Clearing assignments and exams...');
+    try {
+      await scheduleService.clearAssignmentsAndExams();
+      await fetchEvents(); // Refresh calendar
+      console.log('✅ Assignments cleared!');
+    } catch (error) {
+      console.error('❌ Clear assignments failed:', error);
+    }
+  };
+
+  // Add global function for AI study schedule generation
+  (window as any).generateStudyPlan = async () => {
+    console.log('🧪 Generating AI-powered study schedule...');
+    try {
+      await scheduleService.generateAIStudySchedule();
+      await fetchEvents(); // Refresh calendar
+      console.log('✅ AI study schedule generated!');
+    } catch (error) {
+      console.error('❌ Study schedule generation failed:', error);
+    }
+  };
+
+  // Add global function for clearing study sessions
+  (window as any).clearStudySessions = async () => {
+    console.log('🧪 Clearing AI-generated study sessions...');
+    try {
+      await scheduleService.clearStudySessions();
+      await fetchEvents(); // Refresh calendar
+      console.log('✅ Study sessions cleared!');
+    } catch (error) {
+      console.error('❌ Clear study sessions failed:', error);
+    }
+  };
 });
 
 // ICS Export Utils
@@ -2016,53 +2050,11 @@ watch(showTasks, () => {
   currentDate.value = new Date(currentDate.value);
 });
 
-const courseEnrollmentModal = ref();
-const loadingModal = ref();
-const loadingProgress = ref(0);
 
-async function handleEnrollmentYes() {
-  // Close enrollment modal and open loading modal
-  courseEnrollmentModal.value?.close();
-  loadingModal.value?.open();
-  
-  // Reset progress
-  loadingProgress.value = 0;
-  
-  // Simulate progress over 10 seconds
-  const interval = setInterval(() => {
-    loadingProgress.value += 1;
-    if (loadingProgress.value >= 100) {
-      clearInterval(interval);
-    }
-  }, 100); // Update every 100ms for smooth animation
-  
-  try {
-    // Your actual import logic here
-    // await importLectures();
-    
-    // Wait for 10 seconds
-    await new Promise(resolve => setTimeout(resolve, 10000));
-    
-    sessionStorage.setItem('courseEnrollmentPromptShown', 'true');
-  } catch (error) {
-    console.error('Failed to import lectures:', error);
-  } finally {
-    clearInterval(interval);
-    loadingModal.value?.close();
-  }
-}
 
-function handleEnrollmentLater() {
-  // Future: Set reminder logic
-  sessionStorage.setItem('courseEnrollmentPromptShown', 'true');
-  courseEnrollmentModal.value?.close();
-}
 
-function handleEnrollmentNo() {
-  // Future: Mark as permanently dismissed
-  sessionStorage.setItem('courseEnrollmentPromptShown', 'true');
-  courseEnrollmentModal.value?.close();
-}
+
+
 </script>
 
 <style scoped>
@@ -2577,76 +2569,7 @@ Button[variant="outline-secondary"]:hover {
   box-shadow: none;
 }
 
-.enrollment-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 20px;
-  justify-content: center;
-}
 
-.enrollment-actions Button {
-  flex: 1;
-  min-width: 120px;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40px 20px;
-  gap: 20px;
-}
-
-.spinner {
-  width: 60px;
-  height: 60px;
-  border: 4px solid #e9ecef;
-  border-top: 4px solid #005493;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loading-text {
-  font-size: 16px;
-  color: #334e68;
-  text-align: center;
-  margin: 0;
-}
-
-.progress-bar {
-  width: 100%;
-  max-width: 300px;
-  height: 8px;
-  background: #e9ecef;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #005493, #0077cc);
-  border-radius: 4px;
-  transition: width 0.1s ease;
-}
-
-/* Prevent modal backdrop from being dismissed */
-:deep(.modal-backdrop) {
-  pointer-events: all !important;
-}
-
-#loadingModal :deep(.modal) {
-  pointer-events: auto;
-}
-
-#loadingModal :deep(.modal-backdrop) {
-  pointer-events: all;
-  cursor: not-allowed;
-}
 
 /* --- Responsive: stack into two rows on small screens --- */
 @media (max-width: 900px) {
@@ -2664,9 +2587,6 @@ Button[variant="outline-secondary"]:hover {
   .cal-actions { gap: 6px; }
   .cal-toggles { gap: 6px; }
   .cal-title   { font-size: 1rem; }
-  .enrollment-actions {
-    flex-direction: column;
-  }
 }
 
 /* --- Optional: make primary/secondary look like a set --- */

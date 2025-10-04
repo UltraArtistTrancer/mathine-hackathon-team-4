@@ -12,6 +12,7 @@ import calendarRouter from "./routes/calendar.routes";
 import imageRouter from "./routes/image.routes";
 import braindumpRouter from "./routes/braindump.routes";
 import pdfRouter from "./routes/pdf.routes";
+import studyPlanRouter from "./routes/studyPlanRoutes";
 
 dotenvConfig({ path: "ContainerEnv" });
 
@@ -62,6 +63,7 @@ app.use("/calendars", calendarRouter);
 app.use("/images", imageRouter);
 app.use("/braindumps", braindumpRouter);
 app.use("/pdf", pdfRouter);
+app.use("/study-plan", studyPlanRouter);
 
 // --------------------------------
 //      APPLICATION STARTUP
