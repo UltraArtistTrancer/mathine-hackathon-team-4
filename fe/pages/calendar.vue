@@ -2100,7 +2100,7 @@ function handleEnrollmentNo() {
 
 <style scoped>
 .calendar-wrapper {
-  max-width: 1100px;          /* adjust if needed */
+  max-width: 95vw; /* 95% of viewport width */
   margin: 0 auto;
   padding: 12px;
 }
@@ -2732,7 +2732,7 @@ Button[variant="outline-secondary"]:hover {
   cursor: not-allowed;
 }
 
-/* Event card with menu */
+/* Event card with 3 dot menu to edit and delete event*/
 .calendar-event {
   background-color: #e3f2fd;
   padding: 6px 8px;
